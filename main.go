@@ -188,12 +188,12 @@ func printTopValues() {
 		if db != nil {
 			ipStr := strings.Split(key, "/")[0]
 			res, err := db.FindInfo(ipStr, "CN")
-			if err != nil {
-				ipLocation = fmt.Sprintf("[%s %s %s]", res.CountryName, res.RegionName, res.CityName)
+			if err == nil {
+				ipLocation = fmt.Sprintf("[%s%s%s]", res.CountryName, res.RegionName, res.CityName)
 			}
 		}
 
-		fmt.Printf("%s[%s]%s: %s (%s/s)\n", key, ipLocation, connection, humanize.IBytes(total), humanize.IBytes(delta[key]/uint64(duration.Seconds())))
+		fmt.Printf("%s%s%s: %s (%s/s)\n", key, ipLocation, connection, humanize.IBytes(total), humanize.IBytes(delta[key]/uint64(duration.Seconds())))
 	}
 }
 
