@@ -30,6 +30,8 @@ Usage of ./chitose:
         Sort by delta instead of total
   -top int
         Number of top values to show (default 10)
+  -ipdb string
+        IPDB format database file (default "" for no IPDB)
 
 Press 's' (lowercase) to change sort order
 ```

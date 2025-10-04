@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,12 +17,15 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/ipipdotnet/ipdb-go"
 )
 
 type InterfaceInfo struct {
 	MAC net.HardwareAddr
 	IPs []net.IP
 }
+
+var db *ipdb.City
 
 var topShow *int
 
@@ -180,7 +184,16 @@ func printTopValues() {
 			}
 		}
 
-		fmt.Printf("%s%s: %s (%s/s)\n", key, connection, humanize.IBytes(total), humanize.IBytes(delta[key]/uint64(duration.Seconds())))
+		ipLocation := ""
+		if db != nil {
+			ipStr := strings.Split(key, "/")[0]
+			res, err := db.FindInfo(ipStr, "CN")
+			if err != nil {
+				ipLocation = fmt.Sprintf("[%s %s %s]", res.CountryName, res.RegionName, res.CityName)
+			}
+		}
+
+		fmt.Printf("%s[%s]%s: %s (%s/s)\n", key, ipLocation, connection, humanize.IBytes(total), humanize.IBytes(delta[key]/uint64(duration.Seconds())))
 	}
 }
 
@@ -285,6 +298,7 @@ func main() {
 	noNetstat = flag.Bool("no-netstat", false, "Do not detect active connections")
 	useInbound = flag.Bool("inbound", false, "Show inbound traffic instead of outbound")
 	sortDelta := flag.Bool("sort-delta", false, "Sort by delta instead of total")
+	ipdbPath := flag.String("ipdb", "", "IPDB format database file (default \"\" for no IPDB)")
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
@@ -315,6 +329,13 @@ func main() {
 
 	packetSource := gopacket.NewPacketSource(handle, linkType)
 	// totalBytes := 0
+
+	db, err = ipdb.NewCity(*ipdbPath)
+	if err != nil {
+		log.Printf("Error opening IPDB: %s\n", err)
+		db = nil
+		log.Println("Continuing without IPDB")
+	}
 
 	fmt.Println("Starting...")
 	go handleRawInput()
